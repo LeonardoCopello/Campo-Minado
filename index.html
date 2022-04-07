@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campo Minado</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0px;
+
+        }
+
+        #cabecalho {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgb(59, 59, 59);
+            background-color: rgb(158, 158, 158);
+            margin: 5vh auto 0 auto;
+            border: 4px dashed rgb(100, 100, 100);
+            width: 320px;
+            height: 80px;
+        }
+
+        h1 {
+            color: white;
+            font-size: 30px;
+        }
+
+        #tabela {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 auto 0 auto;
+            width: 320px;
+            height: 320px;
+            background-color: gray;
+        }
+
+        .quadrados {
+            border: 1px solid gray;
+            background-color: rgb(219, 219, 219);
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            margin: auto;
+            font-size: 25px;
+        }
+
+        #fimDeJogo {
+            margin-top: 40px;
+            font-size: 30px;
+        }
+
+        img {
+            width: 25px;
+            height: 25px;
+        }
+
+        #bomba {
+            margin-top: -20px;
+            width: 200px;
+            height: 200px;
+        }
+
+        #parabens {
+            width: 400px;
+            height: 200px;
+        }
+
+
+        #resultado, #reiniciar {
+            display: flex;
+            justify-content: center;
+            text-align: center;
+        }
+
+        button {
+            padding: 20px;
+            background-color: white;
+            color: blue;
+            border: 2px solid blue;
+            border-radius: 10px;
+            font-size: 20px;
+        }
+
+        button:hover {
+            border-color: rgb(64, 64, 64);
+            transition: .5s;
+            background-color: rgb(64, 64, 64);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cabecalho">
+        <h1>Campo Minado</h1>
+    </div>
+    <div id="tabela">
+    </div>
+    <div id="resultado">
+        <div id="fimDeJogo"></div>
+    </div>
+    <div id="reiniciar">
+
+    </div>
+
+    <script>
+        const itens = [];
+
+
+        let tabela = document.getElementById('tabela'); //Pega elemento tabela para colocar divs de quadradinhos
+        for (let i = 0; i <= 99; i++) {
+            i = i.toString();
+            let objeto = {
+                id: i,
+                temBomba: 0, // Usado para, quando 1, colocar bomba 
+                estaOcupado: "desocupado" // Usado para marcar quadradinhos já clicados
+            }
+            itens.push(objeto); // Insere objeto na array 'itens'
+            let quadradoTabela = document.createElement('div'); 
+            quadradoTabela.id = i //Seta o id com 'i'
+            quadradoTabela.setAttribute('class', 'quadrados') //Aplica classe "quadrados" em todos os quadradinhos
+            tabela.appendChild(quadradoTabela);
+        }
+
+        let arrayNumerosEscolhidos = []; //Declarado fora para usar em duas funções
+        escolheLocalBomba(); //Chama função que randômicamente localiza bombas
+
+        function escolheLocalBomba() {
+            while (arrayNumerosEscolhidos.length < 15) { // Define número de bombas na tabela e 
+                let randomNumber = Math.floor(Math.random() * 100);
+                if (!arrayNumerosEscolhidos.includes(randomNumber)) { //Se o número sorteado já existir na array...
+                    arrayNumerosEscolhidos.push(randomNumber); //Se não, coloca na array.
+                }
+            }
+            colocaBomba();
+        }
+
+        function colocaBomba() {
+            for (let i = 0; i < arrayNumerosEscolhidos.length; i++) {
+                itens[arrayNumerosEscolhidos[i]].temBomba = 1;
+            }
+            posicionaBombasEEscutas();
+        }
+
+        function posicionaBombasEEscutas() {
+            posicionaBomba();
+            escutaCliqueBomba();
+            escutaCliqueBandeira();
+            escutaCliqueColunaEsquerda();
+            escutaCliqueColunaDireita();
+            escutaCliqueTopo();
+            escutaCliqueBottom();
+            escutaCliqueVerticesDirSup();
+            escutaCliqueVerticesDirInf();
+            escutaCliqueVerticesEsqSup();
+            escutaCliqueVerticesEsqBaixo();
+            escutaCliqueCentro();
+
+        }
+
+        function verificaFimVitoria() {
+            let listaOcupados = itens.filter((element) => {
+                return element.estaOcupado == "desocupado"
+            })
+            console.log(listaOcupados.length)
+            if (listaOcupados.length == 0) {
+                let elmFimDeJogo = document.getElementById('fimDeJogo');
+                elmFimDeJogo.innerHTML = '<img id="parabens" src="parabens.png"/>'
+                btnReiniciar();
+            }
+        }
+
+        function posicionaBomba() {
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+            for (let i = 0; i < itens.length; i++) {
+                if (itens[i].temBomba == 1) {
+                    let elmDivComBomba = document.getElementById(itens[i].id);
+                    itens[i].estaOcupado = "ocupado";
+                    // elmDivComBomba.innerHTML = '<img src="bomba.jpg"/>'
+                }
+            }
+        }
+        function escutaCliqueBomba() {
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            for (let i = 0; i < elmsDivQuadrado.length; i++) {
+                elmsDivQuadrado[i].addEventListener('click', function (e) {
+                    if (itens[i].temBomba == 1) {
+
+                        elmsDivQuadrado[i].innerHTML = '<img src="bomba.jpg"/>'
+                        fimDeJogoPerdeu()
+                    }
+                })
+            }
+        }
+        function escutaCliqueBandeira() {
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+            
+            for (let i = 0; i < elmsDivQuadrado.length; i++) {
+                elmsDivQuadrado[i].addEventListener('contextmenu', function (e) {
+
+                    e.preventDefault();
+                    elmsDivQuadrado[i].innerHTML == '' ? elmsDivQuadrado[i].innerHTML = '<img src="bandeira.jpg"/>' : elmsDivQuadrado[i].innerHTML = "";
+
+                })
+            }
+        }
+
+
+        function escutaCliqueColunaEsquerda() {
+            // Elementos esquerda
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetoslateralEsquerdaSemVertice = itens.filter((element) => {
+                if (element.id % 10 == 0 && element.id != 0 && element.id != 90) {
+                    return element;
+                }
+            }
+            )
+            console.log(listaObjetoslateralEsquerdaSemVertice)
+            const arrayIdsEsquerdaSemVertice = []
+            for (let i = 0; i < listaObjetoslateralEsquerdaSemVertice.length; i++) {
+                let idObjeto = listaObjetoslateralEsquerdaSemVertice[i].id;
+                console.log(listaObjetoslateralEsquerdaSemVertice[i].id)
+
+                arrayIdsEsquerdaSemVertice.push(idObjeto)
+
+                console.log(arrayIdsEsquerdaSemVertice)
+
+                elmsDivQuadrado[(arrayIdsEsquerdaSemVertice[i])].addEventListener('click', function (e) {
+
+                    if (itens[arrayIdsEsquerdaSemVertice[i]].temBomba == 0) {
+                        if (arrayIdsEsquerdaSemVertice.includes(e.target.id)) {
+                            var pos = Number(e.target.id)
+                            let counterIndDir = itens[pos + 1].temBomba;
+                            counterIndDir += itens[pos - 9].temBomba;
+                            counterIndDir += itens[pos + 11].temBomba;
+                            let counterIndCima = itens[pos - 10].temBomba;
+                            let counterIndBaixo = itens[pos + 10].temBomba;
+                            var counterTotal = counterIndDir + counterIndCima + counterIndBaixo;
+                        }
+                        elmsDivQuadrado[pos].innerHTML = counterTotal;
+                        itens[pos].estaOcupado = "ocupado";
+                    }
+                    pintaNumero(e)
+                    verificaFimVitoria();
+                })
+            }
+        }
+        function escutaCliqueColunaDireita() {
+            // Elementos direita
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetoslateralDireitaSemVertice = itens.filter((element) => {
+                if ((element.id).length == 2 && (element.id)[1] == '9' && element.id != 99) {
+                    return element;
+                }
+            })
+
+
+            const arrayIdsDireitaSemVertice = []
+            for (let i = 0; i < listaObjetoslateralDireitaSemVertice.length; i++) {
+                let idObjeto = listaObjetoslateralDireitaSemVertice[i].id;
+                console.log(listaObjetoslateralDireitaSemVertice[i].id)
+
+                arrayIdsDireitaSemVertice.push(idObjeto)
+
+                console.log(arrayIdsDireitaSemVertice)
+                elmsDivQuadrado[(arrayIdsDireitaSemVertice[i])].addEventListener('click', function (e) {
+                    if (itens[arrayIdsDireitaSemVertice[i]].temBomba == 0) {
+                        if (arrayIdsDireitaSemVertice.includes(e.target.id)) {
+                            var pos = Number(e.target.id)
+                            let counterIndEsq = itens[pos - 1].temBomba;
+                            let counterIndCima = itens[pos - 10].temBomba;
+                            counterIndCima += itens[pos - 11].temBomba;
+                            let counterIndBaixo = itens[pos + 10].temBomba;
+                            counterIndBaixo += itens[pos + 9].temBomba;
+                            var counterTotal = counterIndEsq + counterIndCima + counterIndBaixo;
+                        }
+                        elmsDivQuadrado[pos].innerHTML = counterTotal;
+                        itens[pos].estaOcupado = "ocupado";
+
+                    }
+                    pintaNumero(e)
+                    verificaFimVitoria();
+                })
+            }
+        }
+
+        function escutaCliqueTopo() {
+            // Elementos linha superior
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetosTopoSemVertice = itens.filter((element) => {
+                if (element.id > 0 && element.id < 9) {
+                    return element;
+                }
+            })
+
+            const arrayIdsTopo = []
+            for (let i = 0; i < listaObjetosTopoSemVertice.length; i++) {
+                let idObjeto = listaObjetosTopoSemVertice[i].id;
+                console.log(listaObjetosTopoSemVertice[i].id)
+
+                arrayIdsTopo.push(idObjeto)
+
+                console.log(arrayIdsTopo)
+                document.getElementById(arrayIdsTopo[i]).addEventListener('click', function (e) {
+                    if (itens[arrayIdsTopo[i]].temBomba == 0) {
+                        if (arrayIdsTopo.includes(e.target.id)) {
+                            var pos = Number(e.target.id)
+                            let counterIndEsq = itens[pos - 1].temBomba;
+                            let counterIndDir = itens[pos + 1].temBomba;
+                            let counterIndBaixo = itens[pos + 10].temBomba;
+                            counterIndBaixo += itens[pos + 9].temBomba;
+                            counterIndBaixo += itens[pos + 11].temBomba;
+                            var counterTotal = counterIndEsq + counterIndDir + counterIndBaixo;
+                        }
+                        elmsDivQuadrado[pos].innerHTML = counterTotal;
+                        itens[pos].estaOcupado = "ocupado";
+                    }
+                    pintaNumero(e)
+                    verificaFimVitoria();
+                })
+            }
+        }
+        function escutaCliqueBottom() {
+            // Elementos linha superior
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetosBottomSemVertice = itens.filter((element) => {
+                if (element.id > 90 && element.id < 99) {
+                    return element;
+                }
+            })
+
+            const arrayIdsBottom = []
+            for (let i = 0; i < listaObjetosBottomSemVertice.length; i++) {
+                let idObjeto = listaObjetosBottomSemVertice[i].id;
+                console.log(listaObjetosBottomSemVertice[i].id)
+
+                arrayIdsBottom.push(idObjeto)
+
+                console.log(arrayIdsBottom)
+                document.getElementById(arrayIdsBottom[i]).addEventListener('click', function (e) {
+                    if (itens[arrayIdsBottom[i]].temBomba == 0) {
+                        if (arrayIdsBottom.includes(e.target.id)) {
+                            var pos = Number(e.target.id)
+                            let counterIndEsq = itens[pos - 1].temBomba;
+                            let counterIndDir = itens[pos + 1].temBomba;
+                            let counterIndCima = itens[pos - 10].temBomba;
+                            counterIndCima += itens[pos - 9].temBomba;
+                            counterIndCima += itens[pos - 11].temBomba;
+                            var counterTotal = counterIndEsq + counterIndDir + counterIndCima;
+                        }
+                        elmsDivQuadrado[pos].innerHTML = counterTotal;
+                        itens[pos].estaOcupado = "ocupado";
+                    }
+                    pintaNumero(e)
+                    verificaFimVitoria();
+                })
+            }
+        }
+
+        function escutaCliqueVerticesDirSup() {
+            // Elementos linha superior
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetosVertices = itens.filter((element) => {
+                if (element.id == 9) {
+                    return element;
+                }
+            })
+            const arrayIdsVertices = ['9']
+            document.getElementById(arrayIdsVertices[0]).addEventListener('click', function (e) {
+                if (itens[arrayIdsVertices[0]].temBomba == 0) {
+                    if (arrayIdsVertices.includes(e.target.id)) {
+                        var pos = Number(e.target.id)
+                        let counterIndEsq = itens[pos - 1].temBomba;
+                        let counterIndBaixo = itens[pos + 10].temBomba;
+                        counterIndBaixo += itens[pos + 9].temBomba;
+
+                        var counterTotal = counterIndEsq + counterIndBaixo;
+                    }
+                    elmsDivQuadrado[pos].innerHTML = counterTotal;
+                    itens[pos].estaOcupado = "ocupado";
+                }
+                pintaNumero(e)
+                verificaFimVitoria();
+            })
+        }
+        function escutaCliqueVerticesDirInf() {
+            // Elementos linha superior
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetosVertices = itens.filter((element) => {
+                if (element.id == 99) {
+                    return element;
+                }
+            })
+            const arrayIdsVertices = ['99']
+            document.getElementById(arrayIdsVertices[0]).addEventListener('click', function (e) {
+                if (itens[arrayIdsVertices[0]].temBomba == 0) {
+                    if (arrayIdsVertices.includes(e.target.id)) {
+                        var pos = Number(e.target.id)
+                        let counterIndEsq = itens[pos - 1].temBomba;
+                        let counterIndSup = itens[pos - 10].temBomba;
+                        counterIndSup += itens[pos - 11].temBomba;
+
+
+                        var counterTotal = counterIndEsq + counterIndSup;
+                    }
+                    elmsDivQuadrado[pos].innerHTML = counterTotal;
+                    itens[pos].estaOcupado = "ocupado";
+                }
+                pintaNumero(e)
+                verificaFimVitoria();
+            })
+        }
+        function escutaCliqueVerticesEsqSup() {
+            // Elementos linha superior
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetosVertices = itens.filter((element) => {
+                if (element.id == 0) {
+                    return element;
+                }
+            })
+            const arrayIdsVertices = ['0']
+            document.getElementById(arrayIdsVertices[0]).addEventListener('click', function (e) {
+                if (itens[arrayIdsVertices[0]].temBomba == 0) {
+                    if (arrayIdsVertices.includes(e.target.id)) {
+                        var pos = Number(e.target.id)
+                        let counterIndDir = itens[pos + 1].temBomba;
+                        let counterIndBaixo = itens[pos + 10].temBomba;
+                        counterIndBaixo += itens[pos + 11].temBomba;
+
+
+                        var counterTotal = counterIndDir + counterIndBaixo;
+                    }
+                    elmsDivQuadrado[pos].innerHTML = counterTotal;
+                    itens[pos].estaOcupado = "ocupado";
+                }
+                pintaNumero(e)
+                verificaFimVitoria();
+            })
+        }
+        function escutaCliqueVerticesEsqBaixo() {
+            // Elementos linha superior
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetosVertices = itens.filter((element) => {
+                if (element.id == 90) {
+                    return element;
+                }
+            })
+            const arrayIdsVertices = ['90']
+            document.getElementById(arrayIdsVertices[0]).addEventListener('click', function (e) {
+                if (itens[arrayIdsVertices[0]].temBomba == 0) {
+                    if (arrayIdsVertices.includes(e.target.id)) {
+                        var pos = Number(e.target.id)
+                        let counterIndDir = itens[pos + 1].temBomba;
+                        let counterIndCima = itens[pos - 10].temBomba;
+                        counterIndCima += itens[pos - 9].temBomba;
+
+
+                        var counterTotal = counterIndDir + counterIndCima;
+                    }
+                    elmsDivQuadrado[pos].innerHTML = counterTotal;
+                    itens[pos].estaOcupado = "ocupado";
+                }
+                pintaNumero(e)
+                verificaFimVitoria();
+            })
+        }
+        function escutaCliqueCentro() {
+            // Elementos linha superior
+            let elmsDivQuadrado = document.querySelectorAll('.quadrados');
+
+            let listaObjetosCentro = itens.filter((element) => {
+                if (!(element.id > 90 && element.id < 99) && !(element.id % 10 == 0 && element.id != 0 && element.id != 90) && !((element.id).length == 2 && (element.id)[1] == '9' && element.id != 99) && !(element.id > 0 && element.id < 9) && !(element.id > 90 && element.id < 99) && !(element.id == 9) && !(element.id == 99) && !(element.id == 0) && !(element.id == 90)) {
+                    return element;
+                }
+            })
+
+            const arrayIdsCentro = []
+            for (let i = 0; i < listaObjetosCentro.length; i++) {
+                let idObjeto = listaObjetosCentro[i].id;
+                console.log(listaObjetosCentro[i].id)
+
+                arrayIdsCentro.push(idObjeto)
+
+                console.log(arrayIdsCentro)
+                document.getElementById(arrayIdsCentro[i]).addEventListener('click', function (e) {
+                    console.log(arrayIdsCentro[i])
+
+                    if (itens[arrayIdsCentro[i]].temBomba == 0) {
+                        if (arrayIdsCentro.includes(e.target.id)) {
+                            var pos = Number(e.target.id)
+                            let counterIndEsq = itens[pos - 1].temBomba;
+                            let counterIndDir = itens[pos + 1].temBomba;
+                            let counterIndCima = itens[pos - 10].temBomba;
+                            counterIndCima += itens[pos - 9].temBomba;
+                            counterIndCima += itens[pos - 11].temBomba;
+                            let counterIndBaixo = itens[pos + 10].temBomba;
+                            counterIndBaixo += itens[pos + 9].temBomba;
+                            counterIndBaixo += itens[pos + 11].temBomba;
+                            var counterTotal = counterIndEsq + counterIndDir + counterIndCima + counterIndBaixo;
+                        }
+                        elmsDivQuadrado[pos].innerHTML = counterTotal;
+                        itens[pos].estaOcupado = "ocupado";
+                    }
+                    pintaNumero(e)
+                    verificaFimVitoria();
+                })
+            }
+        }
+
+        function pintaNumero(e) {
+            switch (e.target.innerHTML) {
+                case '1':
+                e.target.style.color = "green"
+                break;
+                case '2':
+                e.target.style.color = "blue"
+                break;
+                case '3':
+                e.target.style.color = "brown"
+                break;
+                case '4':
+                e.target.style.color = "red"
+                break;
+            }
+            e.target.style.backgroundColor = "white"  
+        }
+
+        function fimDeJogoPerdeu() {
+            let elmDivFimDeJogo = document.getElementById('fimDeJogo');
+            elmDivFimDeJogo.innerHTML = '<img id="bomba" src="bomba.jpg"/><br>'
+            var audio = new Audio('explosao.mp3');
+            audio.play();
+            btnReiniciar();
+        }
+        function btnReiniciar() {
+            let elmReiniciar = document.getElementById('reiniciar');
+            let elmBtnReiniciar = document.createElement('button');
+            elmBtnReiniciar.innerHTML = 'Reiniciar'
+            elmBtnReiniciar.setAttribute('id', 'reiniciar');
+            elmReiniciar.appendChild(elmBtnReiniciar);
+            document.getElementById('tabela').style.pointerEvents = 'none';
+            elmBtnReiniciar.addEventListener('click', function () {
+                window.location.reload();
+            })
+        }
+        console.log(itens)
+        console.log(arrayNumerosEscolhidos)
+
+    </script>
+</body>
+
+</html>
